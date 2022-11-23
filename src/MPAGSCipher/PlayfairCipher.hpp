@@ -47,7 +47,7 @@ class PlayfairCipher {
     /// The alphabet 
     const std::string alphabet_{
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"};
-    // label for type
+    // maps for use in applyCipher
     using PlayfairMap1 = std::map<char , std::pair<int,int>>;
     using PlayfairMap2 =  std::map<std::pair<int,int>, char> ;
     // create instance of map
@@ -55,7 +55,7 @@ class PlayfairCipher {
     PlayfairMap2 map_coords_to_letters;
     /// The cipher key
     std::string key_{""};
-
+    int gridsize{5};
 };
 
 #endif

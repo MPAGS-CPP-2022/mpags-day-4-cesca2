@@ -1,5 +1,6 @@
 #include "PlayfairCipher.hpp"
 
+
 #include <iostream>
 #include <algorithm>
 #include <iterator>
@@ -24,7 +25,6 @@ void PlayfairCipher::setKey(const std::string& key)
     std::transform(key_.begin(), key_.end(),key_.begin(), ::toupper);
     
     // Remove non-alpha characters 
-    /*std::isalpha*/
 
     auto rem_iter = std::remove_if(key_.begin(), key_.end(), [] (char c) {return !std::isalpha(c);});
 
@@ -51,8 +51,6 @@ void PlayfairCipher::setKey(const std::string& key)
     auto rem_iter2 = std::remove_if(key_.begin(), key_.end(), detect_duplicates);
     key_.erase(rem_iter2, key_.end());
 
-    std::cout << key_ << std::endl;
-
     // Store the coords of each letter
     // loop over each letter
     //calculate row and colunn numbers and store both letter and std::pair of coords in map
@@ -62,11 +60,11 @@ void PlayfairCipher::setKey(const std::string& key)
     std::vector<int> row_number = {};
     column_number.resize(key_.size());
     row_number.resize(key_.size());
-    int i{0};
-    int j{0};
+    int i{-1};
+    int j{-1};
     int k{0};
-    std::generate(column_number.begin(), column_number.end(), [&] () {i+=1; return i%5;});
-    std::generate(row_number.begin(), row_number.end(), [&] () {if (j%5 == 0) k+=1; j+=1; return k;});
+    std::generate(column_number.begin(), column_number.end(), [&] () {i+=1; return i%gridsize;} );
+    std::generate(row_number.begin(), row_number.end(), [&] () {if (j%gridsize == gridsize-1) k+=1; j+=1; return k;});
     // Store the playfair cipher key map
     // need two maps stored as members of the class one to go from letter to coord and one to go from coord to letter
     for (size_t l{0}; l < key_.size(); l++){
@@ -80,13 +78,13 @@ void PlayfairCipher::setKey(const std::string& key)
 }
 
 std::string PlayfairCipher::applyCipher(const std::string& inputText,
-                                      const CipherMode /*cipherMode*/) const
+                                      const CipherMode cipherMode) const
 {   std::string input = inputText;
     std::string output{""};
     
     // Change J → I
     std::transform(input.begin(), input.end(), input.begin(), [] (char c) {if (c== 'J') return 'I'; return c;} );
-    // If repeated chars in a digraph add an X or Q if XX
+    // If repeated chars in a digraph add an X or Q if X
     // handle duplicated letters   
     for (size_t i{0}; i < input.size(); i++){
         if (input[i]==input[i+1] && input[i]=='X'){
@@ -112,22 +110,47 @@ std::string PlayfairCipher::applyCipher(const std::string& inputText,
         int d2_column = ((*d2_coords_iter).second).second;
         // - Apply the rules to these coords to get 'new' coords
         // FOR encryption and decryption
-        if(d1_row == d2_row ){
-            //replace d1 and d2 with ones directly to right
-            d1_column = (1 + d1_column) % 5;
-            d2_column = (1 + d2_column) % 5;; 
-        }
-        else if(d1_column == d2_column){
-            //replace d1 and d2 with ones directly underneath
-            d1_row = (1 + d1_row) % 5;;
-            d2_row = (1 + d2_row) % 5;;
-        }
-        else {
-            //replace d1 with row d1 column d2 and d2 with row d2 column d1, basically swap column values
-            int temp = d1_column;
-            d1_column = d2_column;
-            d2_column = temp;
-        }
+        switch (cipherMode) {
+            case CipherMode::Encrypt:
+                   
+                if(d1_row == d2_row ){
+                    //replace d1 and d2 with ones directly to right
+                    
+                    d1_column = (1 + d1_column) % gridsize;
+                    d2_column = (1 + d2_column) % gridsize;; 
+                }
+                else if(d1_column == d2_column){
+                    //replace d1 and d2 with ones directly underneath
+                    d1_row = (1 + d1_row) % gridsize;;
+                    d2_row = (1 + d2_row) % gridsize;;
+                }
+                else {
+                    //replace d1 with row d1 column d2 and d2 with row d2 column d1, basically swap column values
+                    int temp = d1_column;
+                    d1_column = d2_column;
+                    d2_column = temp;
+                }
+                break;
+            case CipherMode::Decrypt:
+                if(d1_row == d2_row ){
+                    //replace d1 and d2 with ones directly to left
+                    d1_column = ( d1_column + gridsize - 1) % gridsize;
+                    d2_column = (d2_column + gridsize - 1) % gridsize; 
+                }
+                else if(d1_column == d2_column){
+                    //replace d1 and d2 with ones directly above
+                    d1_row = (gridsize + d1_row -1) % gridsize;
+                    d2_row = (gridsize + d2_row -1) % gridsize;
+                }
+                else {
+                    //replace d1 with row d1 column d2 and d2 with row d2 column d1, basically swap column values
+                    int temp = d1_column;
+                    d1_column = d2_column;
+                    d2_column = temp;  
+                }
+                break;
+        }   
+       
 
         // - Find the letter associated with the new coords
          auto coords_transformed_d1 { std::make_pair(d1_row, d1_column) };
